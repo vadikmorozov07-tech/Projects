@@ -114,7 +114,3 @@ std::vector<Point2D> extractPointsFromSegments(const std::vector<LineSegment>& s
     return points;
 }
 
-int main(){
-	return 0;
-}
-
