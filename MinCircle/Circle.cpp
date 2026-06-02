@@ -4,20 +4,20 @@ bool Point2D::operator==(const Point2D& other) const {
     return std::abs(x - other.x) < EPS && std::abs(y - other.y) < EPS;
 }
 
-bool Circle::contains(const Point2D& point) const {
+bool Circle::contains(const Point2D& point) const { // содержится ли точка внутри окружности
     return distanceSquared(center, point) <= radius * radius + EPS;
 }
 
-bool Circle::contains(const LineSegment& segment) const {
+bool Circle::contains(const LineSegment& segment) const { // содержится ли отрезок полностью внутри окружности
     return contains(segment.start) && contains(segment.end);
 }
 
 // круг является выпуклым множеством, поэтому если оба конца внутри, то и весь отрезок внутри
-bool Circle::containsEntireSegment(const LineSegment& segment) const {
+bool Circle::containsEntireSegment(const LineSegment& segment) const { // содержится ли весь отрезок внутри окружности, включая его середину
     return contains(segment.start) && contains(segment.end);
 }
 
-Circle MinimumEnclosingCircleForSegments(const std::vector<LineSegment>& segments) {
+Circle MinimumEnclosingCircleForSegments(const std::vector<LineSegment>& segments) { // находит минимальную окружность, содержащую все заданные отрезки
     if (segments.empty()) {
         return { {0.0, 0.0}, 0.0 };
     }
@@ -68,7 +68,8 @@ Point2D findMidPoint(const LineSegment& segment) {
     return { (segment.start.x + segment.end.x) / 2.0,(segment.start.y + segment.end.y) / 2.0 };
 }
 
-Circle minCircleHelper(std::vector<Point2D>& points, std::vector<Point2D> boundary, size_t n) {
+Circle minCircleHelper(std::vector<Point2D>& points, std::vector<Point2D> boundary, size_t n) { // рекурсивный алгоритм Вельцля для нахождения минимальной окружности
+    // points - все точки, boundary - точки, которые обязаны лежать на окружности, n - количество оставшихся точек
     if (n == 0 || boundary.size() == 3) {
         if (boundary.size() == 0) {
             return { {0, 0}, 0 };
@@ -84,25 +85,25 @@ Circle minCircleHelper(std::vector<Point2D>& points, std::vector<Point2D> bounda
         }
     }
 
-    Point2D p = points[n - 1];
-    Circle circle = minCircleHelper(points, boundary, n - 1);
+    Point2D p = points[n - 1]; // берем последнюю точку
+    Circle circle = minCircleHelper(points, boundary, n - 1); // ищем окружность без нее
 
-    if (circle.contains(p)) {
+    if (circle.contains(p)) { // проверка новой точки
         return circle;
     }
 
     boundary.push_back(p);
-    return minCircleHelper(points, boundary, n - 1);
+    return minCircleHelper(points, boundary, n - 1); // строим новую окружность
 }
 
-Circle minCircle(std::vector<Point2D> points) {
+Circle minCircle(std::vector<Point2D> points) { // нахождение минимальной окружности для множества точек
     std::random_device rd;
-    std::mt19937 gen(rd());
-    std::shuffle(points.begin(), points.end(), gen);
+    std::mt19937 gen(rd()); 
+    std::shuffle(points.begin(), points.end(), gen); // чтобы сложность была О(n), а не О(n!)
     return minCircleHelper(points, {}, points.size());
 }
 
-std::vector<Point2D> extractPointsFromSegments(const std::vector<LineSegment>& segments) {
+std::vector<Point2D> extractPointsFromSegments(const std::vector<LineSegment>& segments) { // извлекает все точки из отрезков (включая середины)
     std::vector<Point2D> points;
 
     for (const auto& segment : segments) {
@@ -111,5 +112,9 @@ std::vector<Point2D> extractPointsFromSegments(const std::vector<LineSegment>& s
         points.push_back(findMidPoint(segment));
     }
     return points;
+}
+
+int main(){
+	return 0;
 }
 
