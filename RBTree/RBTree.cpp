@@ -57,13 +57,6 @@ void BinarySearchTree::clear(Node* node) {
 	delete node;
 }
 
-BinarySearchTree::~BinarySearchTree()
-{
-	clear(_root);
-	_root = nullptr;
-	_size = 0;
-}
-
 BinarySearchTree::BinarySearchTree(const BinarySearchTree& other) : _size(other._size) {
 	if (other._root) {
 		_root = new Node(*other._root);
@@ -96,6 +89,13 @@ BinarySearchTree& BinarySearchTree::operator=(BinarySearchTree&& other) noexcept
 		other._size = 0;
 	}
 	return *this;
+}
+
+BinarySearchTree::~BinarySearchTree()
+{
+	clear(_root);
+	_root = nullptr;
+	_size = 0;
 }
 
 // итераторы
@@ -423,28 +423,6 @@ BinarySearchTree::ConstIterator BinarySearchTree::max(const Key& key) const {
 	return temp2;
 }
 
-BinarySearchTree::Node* BinarySearchTree::detachEndNode() { // отсоединить endNode
-	if (!_root) {
-		return nullptr;
-	}
-	Node* cur = _root;
-	while (cur->right) { // идем к самому правому узлу
-		cur = cur->right;
-	}
-	if (cur->keyValuePair.first != std::numeric_limits<Key>::max()) { // проверка, что самый правый узел не endNode
-		return nullptr;
-	}
-	Node* endNode = cur; 
-	if (endNode->parent) { // отцепляем от родителя
-		endNode->parent->right = nullptr; 
-		endNode->parent = nullptr;
-	}
-	else { // если endNode корень
-		_root = nullptr;
-	}
-	return endNode;
-}
-
 void BinarySearchTree::attachEndNode(Node* endNode) { // присоединить endNode
 	if (!endNode) {
 		return;
@@ -464,6 +442,29 @@ void BinarySearchTree::attachEndNode(Node* endNode) { // присоединит�
 	cur->right = endNode; // прицепляем endNode справа
 	endNode->parent = cur;
 }
+
+BinarySearchTree::Node* BinarySearchTree::detachEndNode() { // отсоединить endNode
+	if (!_root) {
+		return nullptr;
+	}
+	Node* cur = _root;
+	while (cur->right) { // идем к самому правому узлу
+		cur = cur->right;
+	}
+	if (cur->keyValuePair.first != std::numeric_limits<Key>::max()) { // проверка, что самый правый узел не endNode
+		return nullptr;
+	}
+	Node* endNode = cur;
+	if (endNode->parent) { // отцепляем от родителя
+		endNode->parent->right = nullptr;
+		endNode->parent = nullptr;
+	}
+	else { // если endNode корень
+		_root = nullptr;
+	}
+	return endNode;
+}
+
 
 void BinarySearchTree::rotateLeft(Node* x) { // поворот влево вокруг x
 	Node* y = x->right; // берем правого ребенка
@@ -503,54 +504,6 @@ void BinarySearchTree::rotateRight(Node* x) { // поворот вправо в�
 	}
 	y->right = x;
 	x->parent = y;
-}
-
-void BinarySearchTree::insertFixup(Node* z) { // восстанавливает свойства красно-черного дерева после вставки
-	while (z->parent && z->parent->color == RED) { // пока родитель красный
-		Node* gp = z->parent->parent; // дедушка
-		if (!gp) {
-			break;
-		}
-		if (z->parent == gp->left) { // родитель слева от дедушки
-			Node* y = gp->right; // дядя
-			if (y && y->color == RED) { // дядя красный
-				z->parent->color = BLACK;
-				y->color = BLACK;
-				gp->color = RED;
-				z = gp;
-			}
-			else { // дядя черный
-				if (z == z->parent->right) {
-					z = z->parent;
-					rotateLeft(z);
-				}
-				z->parent->color = BLACK;
-				z->parent->parent->color = RED;
-				rotateRight(z->parent->parent);
-			}
-		}
-		else { // родитель справа от дедушки
-			Node* y = gp->left; // дядя
-			if (y && y->color == RED) {
-				z->parent->color = BLACK;
-				y->color = BLACK;
-				gp->color = RED;
-				z = gp;
-			}
-			else {
-				if (z == z->parent->left) {
-					z = z->parent;
-					rotateRight(z);
-				}
-				z->parent->color = BLACK;
-				z->parent->parent->color = RED;
-				rotateLeft(z->parent->parent);
-			}
-		}
-	}
-	if (_root) {
-		_root->color = BLACK; // корень всегда черный
-	}
 }
 
 void BinarySearchTree::insert(const Key& key, const Value& value) { // вставка
@@ -594,6 +547,54 @@ void BinarySearchTree::insert(const Key& key, const Value& value) { // вста�
 	++_size;
 }
 
+void BinarySearchTree::insertFixup(Node* z) { // восстанавливает свойства красно-черного дерева после вставки
+	while (z->parent && z->parent->color == RED) { // пока родитель красный
+		Node* grandparent = z->parent->parent; // дедушка
+		if (!grandparent) {
+			break;
+		}
+		if (z->parent == grandparent->left) { // родитель слева от дедушки
+			Node* y = grandparent->right; // дядя
+			if (y && y->color == RED) { // дядя красный
+				z->parent->color = BLACK;
+				y->color = BLACK;
+				grandparent->color = RED;
+				z = grandparent;
+			}
+			else { // дядя черный
+				if (z == z->parent->right) {
+					z = z->parent;
+					rotateLeft(z);
+				}
+				z->parent->color = BLACK;
+				z->parent->parent->color = RED;
+				rotateRight(z->parent->parent);
+			}
+		}
+		else { // родитель справа от дедушки
+			Node* y = grandparent->left; // дядя
+			if (y && y->color == RED) {
+				z->parent->color = BLACK;
+				y->color = BLACK;
+				grandparent->color = RED;
+				z = grandparent;
+			}
+			else {
+				if (z == z->parent->left) {
+					z = z->parent;
+					rotateRight(z);
+				}
+				z->parent->color = BLACK;
+				z->parent->parent->color = RED;
+				rotateLeft(z->parent->parent);
+			}
+		}
+	}
+	if (_root) {
+		_root->color = BLACK; // корень всегда черный
+	}
+}
+
 void BinarySearchTree::transplant(Node* u, Node* v) { // заменяем поддерево u на поддерево v
 	if (!u->parent) {
 		_root = v;
@@ -616,97 +617,6 @@ BinarySearchTree::Node* BinarySearchTree::minNode(Node* node) const { // пои�
 	return node;
 }
 
-void BinarySearchTree::eraseFixup(Node* x, Node* xParent) { // вызывается, если удаленный узел был черным 
-	while (x != _root && (x == nullptr || x->color == BLACK)) { // пока нарушено свойство одинаковой черной высоты путей
-		if (xParent == nullptr) {
-			break;
-		}
-		if (x == xParent->left) { // x - левый ребенок родителя
-			Node* w = xParent->right; // брат
-			if (w && w->color == RED) { // 1 случай: брат красный
-				w->color = BLACK;
-				xParent->color = RED;
-				rotateLeft(xParent);
-				w = xParent->right;
-			}
-			bool wLB = (!w || !w->left || w->left->color == BLACK); // левый ребенок брата черный
-			bool wRB = (!w || !w->right || w->right->color == BLACK); // правый ребенок брата черный
-			if (wLB && wRB) { // 2 случай: у брата оба ребенка черные
-				if (w) {
-					w->color = RED;
-				}
-				x = xParent;
-				xParent = x ? x->parent : nullptr;
-			}
-			else { 
-				if (wRB) { // 3 случай: правый ребенок черный
-					if (w && w->left) {
-						w->left->color = BLACK;
-					}
-					if (w) {
-						w->color = RED;
-						rotateRight(w);
-					}
-					w = xParent->right;
-				}
-				if (w) { // 4 случай: правый ребенок красный
-					w->color = xParent->color;
-				}
-				xParent->color = BLACK;
-				if (w && w->right) {
-					w->right->color = BLACK;
-				}
-				rotateLeft(xParent);
-				x = _root;
-				break;
-			}
-		}
-		else { // x - правый ребенок родителя
-			Node* w = xParent->left; // брат
-			if (w && w->color == RED) {
-				w->color = BLACK;
-				xParent->color = RED;
-				rotateRight(xParent);
-				w = xParent->left;
-			}
-			bool wRB = (!w || !w->right || w->right->color == BLACK);
-			bool wLB = (!w || !w->left || w->left->color == BLACK);
-			if (wRB && wLB) {
-				if (w) {
-					w->color = RED;
-				}
-				x = xParent;
-				xParent = x ? x->parent : nullptr;
-			}
-			else {
-				if (wLB) {
-					if (w && w->right) {
-						w->right->color = BLACK;
-					}
-					if (w) {
-						w->color = RED;
-						rotateLeft(w);
-					}
-					w = xParent->left;
-				}
-				if (w) {
-					w->color = xParent->color;
-				}
-				xParent->color = BLACK;
-				if (w && w->left) {
-					w->left->color = BLACK;
-				}
-				rotateRight(xParent);
-				x = _root;
-				break;
-			}
-		}
-	}
-	if (x) {
-		x->color = BLACK;
-	}
-}
-
 void BinarySearchTree::erase(const Key& key) { // удаление всех узлов с данным ключом
 	if (!_root) {
 		return;
@@ -716,7 +626,7 @@ void BinarySearchTree::erase(const Key& key) { // удаление всех уз
 	}
 	Node* endNode = detachEndNode(); // открепляем endNode
 
-	while (_root) { 
+	while (_root) {
 		Node* z = _root;
 		while (z) { // поиск узла
 			if (key < z->keyValuePair.first) {
@@ -780,6 +690,97 @@ void BinarySearchTree::erase(const Key& key) { // удаление всех уз
 	}
 	else {
 		delete endNode;
+	}
+}
+
+void BinarySearchTree::eraseFixup(Node* x, Node* xParent) { // вызывается, если удаленный узел был черным 
+	while (x != _root && (x == nullptr || x->color == BLACK)) { // пока нарушено свойство одинаковой черной высоты путей
+		if (xParent == nullptr) {
+			break;
+		}
+		if (x == xParent->left) { // x - левый ребенок родителя
+			Node* w = xParent->right; // брат
+			if (w && w->color == RED) { // 1 случай: брат красный
+				w->color = BLACK;
+				xParent->color = RED;
+				rotateLeft(xParent);
+				w = xParent->right;
+			}
+			bool isLeftBlack = (!w || !w->left || w->left->color == BLACK); // левый ребенок брата черный
+			bool isRightBlack = (!w || !w->right || w->right->color == BLACK); // правый ребенок брата черный
+			if (isLeftBlack && isRightBlack) { // 2 случай: у брата оба ребенка черные
+				if (w) {
+					w->color = RED;
+				}
+				x = xParent;
+				xParent = x ? x->parent : nullptr;
+			}
+			else { 
+				if (isRightBlack) { // 3 случай: правый ребенок черный
+					if (w && w->left) {
+						w->left->color = BLACK;
+					}
+					if (w) {
+						w->color = RED;
+						rotateRight(w);
+					}
+					w = xParent->right;
+				}
+				if (w) { // 4 случай: правый ребенок красный
+					w->color = xParent->color;
+				}
+				xParent->color = BLACK;
+				if (w && w->right) {
+					w->right->color = BLACK;
+				}
+				rotateLeft(xParent);
+				x = _root;
+				break;
+			}
+		}
+		else { // x - правый ребенок родителя
+			Node* w = xParent->left; // брат
+			if (w && w->color == RED) {
+				w->color = BLACK;
+				xParent->color = RED;
+				rotateRight(xParent);
+				w = xParent->left;
+			}
+			bool isLeftBlack = (!w || !w->left || w->left->color == BLACK);
+			bool isRightBlack = (!w || !w->right || w->right->color == BLACK);
+			if (isLeftBlack && isRightBlack) {
+				if (w) {
+					w->color = RED;
+				}
+				x = xParent;
+				xParent = x ? x->parent : nullptr;
+			}
+			else {
+				if (isLeftBlack) {
+					if (w && w->right) {
+						w->right->color = BLACK;
+					}
+					if (w) {
+						w->color = RED;
+						rotateLeft(w);
+					}
+					w = xParent->left;
+				}
+				if (w) {
+					w->color = xParent->color;
+				}
+				xParent->color = BLACK;
+				if (w && w->left) {
+					w->left->color = BLACK;
+				}
+				rotateRight(xParent);
+				x = _root;
+				break;
+			}
+		}
+	}
+	if (x) {
+		x->color = BLACK;
 	}
 }
 
